@@ -123,14 +123,15 @@ void GammaEvent::CalculateNewRandomPosition(std::vector<float> &new_pos, VoxelPa
   new_pos[Y_POS]= -2000;
   int tries = 0;
    while ((tries < 1) && (new_pos[X_POS]<xmin || new_pos[X_POS]>xmax ||new_pos[Y_POS]<ymin || new_pos[Y_POS] > ymax)){
-     if(image->GetZbins()==1){
-       random_z = min_z;
-     }
-     else{
+     // if(image->GetZbins()==1){
+     //   random_z = min_z;
+     // }
+     // else{
 
        random_z   = rand_FloatRange(min_z,max_z);//r->Uniform(min_z, max_z);//rand_FloatRange(min_z,max_z);
 
-     }
+     // }
+
      random_phi =rand_FloatRange(this->GetPhiMin(),this->GetPhiMax());//  r->Uniform(this->GetPhiMin(),this->GetPhiMax()); //rand_FloatRange(0,2*PI);
     
   cone[X_POS] = sin(mcomptonAngle)*cos(random_phi);
@@ -141,11 +142,19 @@ void GammaEvent::CalculateNewRandomPosition(std::vector<float> &new_pos, VoxelPa
   rot_cone[Y_POS]=rotZY[X_POS][Y_POS]*cone[X_POS] + rotZY[Y_POS][Y_POS]*cone[Y_POS]+ + rotZY[Z_POS][Y_POS]*cone[Z_POS];
   rot_cone[Z_POS]=rotZY[X_POS][Z_POS]*cone[X_POS] + rotZY[Y_POS][Z_POS]*cone[Y_POS]+ + rotZY[Z_POS][Z_POS]*cone[Z_POS];
 
-  coeff = (random_z-morg[Z_POS])/rot_cone[Z_POS];    
+  coeff = (random_z-morg[Z_POS])/rot_cone[Z_POS];   
+
+  float gamma=0.167*3.1415;
+  float rot_Cx=rot_cone[X_POS];
+  float rot_Cy=cos(gamma)*rot_cone[Y_POS]+sin(gamma)*rot_cone[Z_POS];
+  float rot_Cz=-sin(gamma)*rot_cone[Y_POS]+cos(gamma)*rot_cone[Z_POS];
+  new_pos[0] =  morg[X_POS]+coeff*rot_Cx;
+  new_pos[1] =  morg[Y_POS]+coeff*rot_Cy;
+  new_pos[2] =  morg[Z_POS]+coeff*rot_Cz;
   
-  new_pos[0] =  morg[X_POS]+coeff*rot_cone[X_POS];
-  new_pos[1] =  morg[Y_POS]+coeff*rot_cone[Y_POS];
-  new_pos[2] =  morg[Z_POS]+coeff*rot_cone[Z_POS];
+  // new_pos[0] =  morg[X_POS]+coeff*rot_cone[X_POS];
+  // new_pos[1] =  morg[Y_POS]+coeff*rot_cone[Y_POS];
+  // new_pos[2] =  morg[Z_POS]+coeff*rot_cone[Z_POS];
   tries++;
 
    }

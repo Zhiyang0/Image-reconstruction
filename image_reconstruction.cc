@@ -15,13 +15,14 @@
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "GammaEvent.hh"
 
-#include<TRandom1.h>
-#include<TTree.h>
-#include<TFile.h>
-#include<TCanvas.h>
-#include<TNtuple.h>
+#include <TRandom1.h>
+#include <TTree.h>
+#include <TFile.h>
+#include <TCanvas.h>
+#include <TNtuple.h>
 
 #define X_POS 0
 #define Y_POS 1
@@ -33,6 +34,32 @@
 using namespace std;
 
 class GammaEvent;
+class Mat
+{
+public:
+  Mat(int x1,int y1,int z1);
+  Mat();
+  ~Mat() {cout<<"DESTRUCT\n";};
+  void Matrix();
+  int& at(int x1,int y1,int z1);
+  int *d;
+private:
+  int x,y,z;
+  int size;
+};
+Mat::Mat()
+{}
+Mat::Mat(int x1,int y1,int z1):x(x1),y(y1),z(z1)
+{
+  size=x*y*z;
+  d = new int[size]();
+}
+int &Mat::at(int x_,int y_,int z_)
+{
+  int index=z_+z*(y_+y*x_);
+  assert(index<size);
+  return d[index];
+}
 
 bool ComptonEdgeTest (float scatt_e1,float abs_e2)
 {
@@ -57,15 +84,18 @@ int main()
  
   int Xbins = 400;//1000;
   int Ybins = 400;//1000;
-  int Zbins = 1;
+  int Zbins = 400;
+  float X_limit=Xbins;
+  float Y_limit=Ybins*cos(0.167*3.1415);
+  float Z_limit=Zbins*sin(0.167*3.1415);
   
 
   float xmin = -200;// mm
   float xmax = 200; // mm
   float ymin = -200;// mm
   float ymax = 200; // mm
-  float zmin = -10; // mm
-  float zmax = -9;// mm
+  float zmin = -250; // mm
+  float zmax = 150;// mm
   
   float voxel_dimX =(xmax-xmin)/float(Xbins); // 1 mm.
   float voxel_dimY =(ymax-ymin)/float(Ybins); // 1 mm.
@@ -75,29 +105,32 @@ int main()
 
   std::cout << "Get min image: " <<  imageParam->GetMinX() << std::endl;
 
-  std::cout << "Get voxel dim image: " <<  imageParam->GetVoxelDimX() << std::endl;
- float ***pDensity;
- pDensity = new float**[Zbins];
+  std::cout << "Get voxel dim image: " <<  imageParam->GetVoxelDimX() << std::endl;\
 
- float ***finalImage;
- finalImage = new float**[Zbins];
+  Mat pDensity(Xbins,Ybins,Zbins);
+  Mat finalImage(Xbins,Ybins,Zbins);
+ // float ***pDensity;
+ // pDensity = new float**[Zbins];
 
- for (int zitr =0;zitr < Zbins;zitr++){
-   pDensity[zitr] = new float*[Ybins];
-   finalImage[zitr] = new float*[Ybins];
-   for(int yitr = 0; yitr < Ybins; yitr++){
-     pDensity[zitr][yitr] = new float[Xbins];
-     finalImage[zitr][yitr] = new float[Xbins];
-   }
- }
+ // float ***finalImage;
+ // finalImage = new float**[Zbins];
 
- //initialise density matrix to 0;
- for (int xitr =0;xitr < Xbins;xitr++)
-   for (int yitr =0;yitr < Ybins;yitr++)
-     for (int zitr =0;zitr < Zbins;zitr++){
-       pDensity[zitr][yitr][xitr]=0;
-       finalImage[zitr][yitr][xitr]=0;
-     }
+ // for (int zitr =0;zitr < Zbins;zitr++){
+ //   pDensity[zitr] = new float*[Ybins];
+ //   finalImage[zitr] = new float*[Ybins];
+ //   for(int yitr = 0; yitr < Ybins; yitr++){
+ //     pDensity[zitr][yitr] = new float[Xbins];
+ //     finalImage[zitr][yitr] = new float[Xbins];
+ //   }
+ // }
+
+ // //initialise density matrix to 0;
+ // for (int xitr =0;xitr < Xbins;xitr++)
+ //   for (int yitr =0;yitr < Ybins;yitr++)
+ //     for (int zitr =0;zitr < Zbins;zitr++){
+ //       pDensity[zitr][yitr][xitr]=0;
+ //       finalImage[zitr][yitr][xitr]=0;
+ //     }
   
   float x1,y1,z1,e1,x2,y2,z2,e2;
   float eventItr = 0;
@@ -187,7 +220,7 @@ int main()
 	}
 
 	else {
-	  pDensity[newVoxelPos[Z_POS]][newVoxelPos[Y_POS]][newVoxelPos[X_POS]]++;
+	  pDensity.at(newVoxelPos[X_POS],newVoxelPos[Y_POS],newVoxelPos[Z_POS])++;
 
 	  }
       //std::cout << "\n" << std::endl;
@@ -248,7 +281,7 @@ int main()
 	  newOutside = true;
 	}
 	else {
-	  newProb =  pDensity[newVoxelPos[Z_POS]][newVoxelPos[Y_POS]][newVoxelPos[X_POS]]+1;
+	  newProb =  pDensity.at(newVoxelPos[X_POS],newVoxelPos[Y_POS],newVoxelPos[Z_POS])+1;
 	  newOutside = false;
 	  
 	}
@@ -258,7 +291,7 @@ int main()
 	  oldOutside = true;
 	}
 	else {
-	  oldProb =  pDensity[oldVoxelPos[Z_POS]][oldVoxelPos[Y_POS]][oldVoxelPos[X_POS]];
+	  oldProb =  pDensity.at(oldVoxelPos[X_POS],oldVoxelPos[Y_POS],oldVoxelPos[Z_POS]);
 	  oldOutside = false;
 	}
 
@@ -271,14 +304,14 @@ int main()
 	if (accept >=1 && newOutside == false){
 	  isAccepted = true;
 	  //increase density at the new position
-	  pDensity[newVoxelPos[Z_POS]][newVoxelPos[Y_POS]][newVoxelPos[X_POS]]++;
+	  pDensity.at(newVoxelPos[X_POS],newVoxelPos[Y_POS],newVoxelPos[Z_POS])++;
 	  Z_sum[newVoxelPos[Z_POS]]++;
 	  //new position becomes old position 
 	  (*itr)->SetOldPos(new_pos);
 
 	  if(oldOutside==false){
 	  //decrease density at old position
-	    pDensity[oldVoxelPos[Z_POS]][oldVoxelPos[Y_POS]][oldVoxelPos[X_POS]]--;
+	    pDensity.at(oldVoxelPos[X_POS],oldVoxelPos[Y_POS],oldVoxelPos[Z_POS])--;
 	    Z_sum[newVoxelPos[Z_POS]]--;
 	  }
 	}
@@ -291,13 +324,13 @@ int main()
 	      //accept
 	      isAccepted = true;
 	      //increase density at the new position
-	      pDensity[newVoxelPos[Z_POS]][newVoxelPos[Y_POS]][newVoxelPos[X_POS]]++;
+	      pDensity.at(newVoxelPos[X_POS],newVoxelPos[Y_POS],newVoxelPos[Z_POS])++;
 	      Z_sum[newVoxelPos[Z_POS]]++;
 	      //new position becomes old position 
 	      (*itr)->SetOldPos(new_pos);
 	      if(oldOutside==false){
 		//decrease density at old position
-		pDensity[oldVoxelPos[Z_POS]][oldVoxelPos[Y_POS]][oldVoxelPos[X_POS]]--;
+		pDensity.at(oldVoxelPos[X_POS],oldVoxelPos[Y_POS],oldVoxelPos[Z_POS])--;
 		Z_sum[newVoxelPos[Z_POS]]--;
 	      }
 	      
@@ -324,7 +357,7 @@ int main()
 	
 	if ((oldVoxelPos[X_POS] >= 0)&&(oldVoxelPos[Y_POS] >= 0)&&(oldVoxelPos[Z_POS] >= 0)&&(oldVoxelPos[X_POS] < Xbins) && (oldVoxelPos[Y_POS]<Ybins) && (oldVoxelPos[Z_POS]<Zbins)){
 	  
-	finalImage[oldVoxelPos[Z_POS]][oldVoxelPos[Y_POS]][oldVoxelPos[X_POS]]++;
+	finalImage.at(oldVoxelPos[X_POS],oldVoxelPos[Y_POS],oldVoxelPos[Z_POS])++;
 	}
       }
 
@@ -333,7 +366,7 @@ int main()
 
 
   std::cout << "End of iterations" << std::endl;
-  //write density matrix in file
+  // //write density matrix in file
   
   std::ofstream outFile ("density.img", ios::binary | ios::out);
   int temp;  
@@ -359,58 +392,58 @@ int main()
     for (int yitr =0;yitr < Ybins;yitr++){
       ypos = (yitr*voxel_dimY) + ymin;
       for (int xitr =0;xitr < Xbins;xitr++){
-	temp = pDensity[zitr][yitr][xitr];
-	//temp = finalImage[zitr][yitr][xitr];
+	temp = pDensity.at(xitr,yitr,zitr);
+	//temp = finalImage(xitr,yitr,zitr);
 	xpos = (xitr*voxel_dimX) + xmin;
-	//voxelImage[zitr*Xbins*Xbins + Ybins*Xbins + xitr] =  temp;
+	// //voxelImage[zitr*Xbins*Xbins + Ybins*Xbins + xitr] =  temp;
 	outFile.write((char*)&temp,sizeof(temp));
 	if (temp>0){
-	  ntuple->Fill(xpos,ypos,zpos,temp);
+    ntuple->Fill(xpos,ypos,zpos,temp);
 	  //std::cout <<temp << "\t" <<  xpos << "\t" << ypos << "\t" << zpos << std::endl;
 	}
 	sum+=temp;
-	/*if (temp >0){
-	  std::cout <<temp << "\t voxel " <<  xitr << "\t" << yitr << "\t" << zitr << std::endl;
+	// if (temp >0){
+	//   std::cout <<temp << "\t voxel " <<  xitr << "\t" << yitr << "\t" << zitr << std::endl;
 	 
-	  } */     
+	//   }      
       }
     }
     // std::cout << "zitr = " << zitr << "\t" << sum << "\tzpos\t" << zpos<< std::endl; 
   }
 
  
- // t1->Draw("xitr:yitr:zitr:temp");
+ // // t1->Draw("xitr:yitr:zitr:temp");
  ntuple->Write();
  f1->Close();
  outFile.close();
- /*
- for (int xitr =0;xitr < Xbins;xitr++)
-   for (int yitr =0;yitr < Ybins;yitr++)
-     for (int zitr =0;zitr < Zbins;zitr++)
-       if(voxelImage[zitr*Xbins*Xbins + Ybins*Xbins + xitr] > 0)
-	 {
-	 }
- */
-	 //std::cout << "test: " << xitr << "\t" << yitr << "\t" <<zitr <<  "\t"<< voxelImage[zitr*Xbins*Xbins + Ybins*Xbins + xitr] << std::endl;
- //try record in a different way: 
- /*
- FILE * outputFile = fopen("testImage.img","wb");
- fwrite(voxelImage,sizeof(float),Xbins*Ybins*Zbins,outputFile);
- fclose(outputFile);
- */
+ // /*
+ // for (int xitr =0;xitr < Xbins;xitr++)
+ //   for (int yitr =0;yitr < Ybins;yitr++)
+ //     for (int zitr =0;zitr < Zbins;zitr++)
+ //       if(voxelImage[zitr*Xbins*Xbins + Ybins*Xbins + xitr] > 0)
+	//  {
+	//  }
+ // */
+	//  //std::cout << "test: " << xitr << "\t" << yitr << "\t" <<zitr <<  "\t"<< voxelImage[zitr*Xbins*Xbins + Ybins*Xbins + xitr] << std::endl;
+ // //try record in a different way: 
+ // /*
+ // FILE * outputFile = fopen("testImage.img","wb");
+ // fwrite(voxelImage,sizeof(float),Xbins*Ybins*Zbins,outputFile);
+ // fclose(outputFile);
+ // */
 
-  // De-Allocate memory to prevent memory leak
-  for (int i = 0; i < Zbins; ++i) {
-    for (int j = 0; j < Ybins; ++j)
-      delete [] pDensity[i][j];
-    delete [] pDensity[i];
-  }
-  delete [] pDensity;
+ //  // // De-Allocate memory to prevent memory leak
+ //  // for (int i = 0; i < Zbins; ++i) {
+ //  //   for (int j = 0; j < Ybins; ++j)
+ //  //     delete [] pDensity[i][j];
+ //  //   delete [] pDensity[i];
+ //  // }
+ //  // delete [] pDensity;
 
-  /* for (int zitr =0;zitr < Zbins;zitr++){
-    std::cout << zitr << "  zsum:  "  << Z_sum[zitr] << std::endl;
-  }
-  */
+ //  // /* for (int zitr =0;zitr < Zbins;zitr++){
+ //  //   std::cout << zitr << "  zsum:  "  << Z_sum[zitr] << std::endl;
+ //  // }
+ //  // */
   
   for(itr=gammaSet.begin(); itr!=gammaSet.end(); itr++){
     delete *itr;
